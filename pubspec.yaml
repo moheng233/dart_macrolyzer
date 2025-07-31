@@ -1,0 +1,13 @@
+name: dart_macrolyzer
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+publish_to: none
+
+environment:
+  sdk: ^3.9.0-333.2.beta
+
+workspace:
+  - packages/lsp_protocol
+  - packages/lsp
