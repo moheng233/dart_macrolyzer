@@ -4,7 +4,6 @@ import 'package:json_rpc_2/json_rpc_2.dart';
 
 import 'helper/protocol/protocol_special.dart';
 import 'protocol/protocol_generated.dart';
-import 'remote_console.dart';
 import 'wireformat.dart';
 
 class LspClient {
@@ -13,7 +12,6 @@ class LspClient {
   }
 
   late final Peer peer;
-  late final RemoteConsole console;
 
   Future<void> listen() => peer.listen();
 
@@ -102,8 +100,8 @@ class LspClient {
 
   Future<Hover?> hover(TextDocumentPositionParams params) async {
     final result = await sendRequest('textDocument/hover', params.toJson());
-    return result != null 
-        ? Hover.fromJson(result as Map<String, Object?>) 
+    return result != null
+        ? Hover.fromJson(result as Map<String, Object?>)
         : null;
   }
 
@@ -127,8 +125,8 @@ class LspClient {
       'textDocument/signatureHelp',
       params.toJson(),
     );
-    return result != null 
-        ? SignatureHelp.fromJson(result as Map<String, Object?>) 
+    return result != null
+        ? SignatureHelp.fromJson(result as Map<String, Object?>)
         : null;
   }
 
@@ -287,10 +285,12 @@ class LspClient {
   Future<Either2<Range, PrepareRenameResult>> prepareRename(
     TextDocumentPositionParams params,
   ) async {
-    final result = await sendRequest(
-      'textDocument/prepareRename',
-      params.toJson(),
-    ) as Map<String, Object?>;
+    final result =
+        await sendRequest(
+              'textDocument/prepareRename',
+              params.toJson(),
+            )
+            as Map<String, Object?>;
     // Handle the Either2 result based on the actual structure
     if (result.containsKey('start')) {
       return Either2.t1(Range.fromJson(result));
