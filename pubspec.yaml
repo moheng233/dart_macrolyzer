@@ -9,5 +9,6 @@ environment:
   sdk: ^3.9.0-333.2.beta
 
 workspace:
+  - packages/plugin
   - packages/lsp_protocol
   - packages/lsp

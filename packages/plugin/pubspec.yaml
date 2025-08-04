@@ -1,4 +1,4 @@
-name: dart_macrolyzer_lsp
+name: dart_macrolyzer_plugin
 description: A starting point for Dart libraries or applications.
 version: 1.0.0
 
@@ -9,10 +9,6 @@ environment:
   sdk: ^3.9.0-333.2.beta
 
 dependencies:
-  json_rpc_2: ^4.0.0
-  dart_macrolyzer_lsp_protocol: ^1.0.0
-  dart_macrolyzer_plugin: ^1.0.0
-  path: ^1.9.1
   source_maps: ^0.10.13
   source_span: ^1.10.1
   meta: ^1.17.0
