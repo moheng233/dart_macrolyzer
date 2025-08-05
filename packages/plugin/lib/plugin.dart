@@ -9,16 +9,16 @@ abstract class MacrolyzerPlugin<T extends MacrolyzerPluginContext> {
 
   Future<T> check(
     ResolvedUnitResult unit, {
-    AnalysisSession session,
-    SourceFile source,
+    required AnalysisSession session,
+    required SourceFile source,
   });
 
   Future<bool> transform(
     TextEditTransaction edit,
     ResolvedUnitResult unit, {
-    bool isDeclaration,
-    AnalysisSession session,
-    T context,
+    required AnalysisSession session,
+    required T context,
+    bool isDeclaration = false,
   });
 }
 

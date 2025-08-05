@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:dart_macrolyzer_lsp_protocol/lsp_client.dart';
 import 'package:path/path.dart';
-import 'package:source_span/source_span.dart';
 
 import 'event/file_system_event.dart';
 import 'virtual_file.dart';
@@ -17,20 +16,21 @@ final class MacrolyzerFileSystem implements ResourceProvider {
   final HashMap<String, VirtualFile> _fileMap = HashMap();
 
   final OverlayResourceProvider _provider;
+  late final AnalysisContextCollection analysis;
 
   final StreamController<FileSystemEventBase> _upstreamEvent =
       StreamController();
   final StreamController<FileSystemEventBase> _downstreamEvent =
       StreamController();
 
-  /// 送至上行服务器的文件系统事件
-  Stream<FileSystemEventBase> get upstreamEvent => _upstreamEvent.stream;
-
   /// 送至下行服务器的文件系统事件
   Stream<FileSystemEventBase> get downstreamEvent => _downstreamEvent.stream;
 
   @override
   Context get pathContext => _provider.pathContext;
+
+  /// 送至上行服务器的文件系统事件
+  Stream<FileSystemEventBase> get upstreamEvent => _upstreamEvent.stream;
 
   @override
   File getFile(String path) => _provider.getFile(path);
@@ -50,19 +50,26 @@ final class MacrolyzerFileSystem implements ResourceProvider {
 
   VirtualFile getVirtaulFile(String path) => _fileMap[path]!;
 
-  VirtualFile open(String url, String content, int modificationStamp) {
+  VirtualFile open(String path, String content, int modificationStamp) {
     final file = VirtualFile(
-      url,
+      path,
       content,
+      event: _downstreamEvent,
       provider: _provider,
-      onFileChange: _onFileChange,
       modificationStamp: modificationStamp,
+      analysis: analysis,
     );
 
-    _fileMap[url] = file;
+    _fileMap[path] = file;
+
+    _downstreamEvent.add(
+      FileSystemOpenEvent(
+        path: path,
+        content: content,
+        modificationStamp: modificationStamp,
+      ),
+    );
 
     return file;
   }
-
-  Future<void> _onFileChange(String path) async {}
 }

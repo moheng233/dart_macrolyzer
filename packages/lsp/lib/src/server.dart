@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/analysis_context.dart';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
+import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:dart_macrolyzer_lsp_protocol/lsp_client.dart';
 import 'package:dart_macrolyzer_lsp_protocol/lsp_server.dart';
@@ -10,7 +10,6 @@ import 'package:dart_macrolyzer_lsp_protocol/lsp_server.dart';
 import 'event/file_system_event.dart';
 import 'file_system.dart';
 import 'util/file_path.dart';
-import 'virtual_file.dart';
 
 const name = 'macrolyzer';
 const version = '0.0.1';
@@ -34,6 +33,31 @@ final class MacrolyzerServer {
       ..onDidChangeTextDocument(_onDidChangeTextDocument)
       ..onDidCloseTextDocument(_onDidCloseTextDocument)
       ..onDidSaveTextDocument(_onDidSaveTextDocument);
+
+    _fileSystem.downstreamEvent.listen(
+      (event) async {
+        switch (event) {
+          case FileSystemOpenEvent():
+            _console.log('${event.path} open');
+          case FileSystemCompleteChangeEvent():
+            _console.log('${event.path} change');
+
+            final context = _analysis.contextFor(event.path);
+
+            context.changeFile(event.path);
+            await context.applyPendingFileChanges();
+
+            final session = context.currentSession;
+            final unit = await session.getResolvedLibrary(event.path);
+
+            if (unit is ResolvedLibraryResult) {}
+          case FileSystemCloseEvent():
+            _console.log('${event.path} close');
+          case FileSystemSaveEvent():
+            _console.log('${event.path} save');
+        }
+      },
+    );
   }
 
   final String dartPath;
@@ -85,8 +109,6 @@ final class MacrolyzerServer {
           _downstream.peer.sendRequest(parameters.method, parameters.value),
     );
 
-    _upstream = LspClient(_lspProcess.stdout, _lspProcess.stdin);
-
     listend = true;
 
     await Future.wait([_downstream.listen(), _upstream.listen()]);
@@ -119,7 +141,9 @@ final class MacrolyzerServer {
 
   Future<void> _onDidCloseTextDocument(
     DidCloseTextDocumentParams params,
-  ) async {}
+  ) async {
+    _fileSystem.getVirtaulFile(toFilePath(params.textDocument.uri)).close();
+  }
 
   Future<void> _onDidOpenTextDocument(DidOpenTextDocumentParams params) async {
     _fileSystem.open(
@@ -142,6 +166,8 @@ final class MacrolyzerServer {
 
   Future<void> _onInitialized(InitializedParams params) async {
     initialized = true;
+
+    _fileSystem.analysis = _analysis;
 
     _upstream.initialized(params);
   }

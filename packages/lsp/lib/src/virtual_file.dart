@@ -1,23 +1,29 @@
+import 'dart:async';
+
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/file_system/overlay_file_system.dart';
-import 'package:source_maps/refactor.dart';
 import 'package:source_span/source_span.dart';
 
-typedef FileChangeHandler = Future<void> Function(String path);
+import 'event/file_system_event.dart';
+
+typedef FileChangeHandler = Future<void> Function(String path, String content);
 
 final class VirtualFile {
   VirtualFile(
     String path,
     String content, {
-    required FileChangeHandler onFileChange,
+    required StreamController<FileSystemEventBase> event,
     required OverlayResourceProvider provider,
     required int modificationStamp,
+    required AnalysisContextCollection analysis,
   }) : _source = SourceFile.fromString(content, url: path),
        _result = SourceFile.fromString(content, url: path),
        _path = path,
        _content = content,
        _resultContent = content,
-       _onFileChange = onFileChange,
-       _provider = provider {
+       _event = event,
+       _provider = provider,
+       _analysis = analysis {
     _provider.setOverlay(
       path,
       content: content,
@@ -35,7 +41,9 @@ final class VirtualFile {
 
   String _resultContent;
 
-  final FileChangeHandler _onFileChange;
+  final AnalysisContextCollection _analysis;
+
+  final StreamController<FileSystemEventBase> _event;
 
   SourceFile get source => _source;
   String get content => _content;
@@ -49,10 +57,18 @@ final class VirtualFile {
       modificationStamp: modificationStamp,
     );
 
-    _onFileChange(_path);
+    _event.add(
+      FileSystemCompleteChangeEvent(
+        path: _path,
+        content: content,
+        modificationStamp: modificationStamp,
+      ),
+    );
   }
 
   void close() {
     _provider.removeOverlay(_path);
+
+    _event.add(FileSystemCloseEvent(path: _path));
   }
 }
